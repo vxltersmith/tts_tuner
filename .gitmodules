@@ -1,0 +1,3 @@
+[submodule "chatterbox"]
+	path = chatterbox
+	url = ./chatterbox/
