@@ -56,7 +56,7 @@ def build_model(
 if __name__ == "__main__":
     ckpt_dir="./data/temp_model"
     tokenizer_path = "./data/en_ru_tokenizer.json"
-    t3_chk_name = 't3_cfg_ru_harm.safetensors'
+    t3_chk_name = 't3_cfg_ru_harm_bilat.safetensors'
     text_tokens_dict_size = 2687 # new dict size could be calculated automatically
     
     model = build_model(ckpt_dir, tokenizer_path=tokenizer_path, text_tokens_dict_size=text_tokens_dict_size,

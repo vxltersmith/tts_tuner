@@ -9,11 +9,7 @@ def calculate_metrics(original, transcribed):
     cer = d / max(len(original), 1)
     return d, cer
 
-def run_pipeline():
-    # 1. Load Dataset (streaming=True saves disk space)
-    print("Loading Vikhrmodels/ToneSpeak...")
-    ds = load_dataset("Vikhrmodels/ToneSpeak", split="train", streaming=True)
-    
+def run_pipeline():   
     # 2. Initialize ASR (Tiny model for least dependencies/resources)
     print("Loading Whisper 'tiny' model...")
     asr_model = whisper.load_model("tiny")
