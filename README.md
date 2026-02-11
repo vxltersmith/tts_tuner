@@ -1,7 +1,8 @@
 # TTS Tuner
-Project Summary: Phonetic Latent Grafting (PLG) for Zero-Shot Multilingual TTS
-Objective
-This project introduces Phonetic Latent Grafting (PLG), a novel framework for rapid, low-resource lingual adaptation of large-scale, decoder-only TTS models (e.g., Llama-3-Speech or VALL-E). PLG enables zero-shot extension to new scripts and languages by leveraging pre-trained acoustic priors and phonetic manifold alignment, without requiring extensive retraining or large-scale datasets.
+ ## Project Summary: 
+ Phonetic Latent Grafting (PLG) for Zero-Shot Multilingual TTS
+ ## Objective
+   This project introduces Phonetic Latent Grafting (PLG), a novel framework for rapid, low-resource lingual adaptation of large-scale, decoder-only TTS models (e.g., Llama-3-Speech or VALL-E). PLG enables zero-shot extension to new scripts and languages by leveraging pre-trained acoustic priors and phonetic manifold alignment, without requiring extensive retraining or large-scale datasets.
 
 
 ## Quick Start

@@ -6,12 +6,12 @@ from pathlib import Path
 from safetensors.torch import load_file
 
 # Internal Chatterbox imports
-from src.chatterbox.tts import ChatterboxTTS, Conditionals
-from src.chatterbox.models.t3.t3 import T3
-from src.chatterbox.models.t3.modules.t3_config import T3Config
-from src.chatterbox.models.voice_encoder.voice_encoder import VoiceEncoder
-from src.chatterbox.models.s3gen import S3Gen
-from src.chatterbox.models.tokenizers.tokenizer import EnTokenizer
+from chatterbox.tts import ChatterboxTTS, Conditionals
+from chatterbox.models.t3.t3 import T3
+from chatterbox.models.t3.modules.t3_config import T3Config
+from chatterbox.models.voice_encoder.voice_encoder import VoiceEncoder
+from chatterbox.models.s3gen import S3Gen
+from chatterbox.models.tokenizers.tokenizer import EnTokenizer
 
 # --- 1. CONFIGURATION ---
 
@@ -30,6 +30,27 @@ def load_config():
         return yaml.safe_load(f)
 
 # --- 2. MODEL BUILDING ---
+def get_best_device():
+    if not torch.cuda.is_available():
+        return torch.device("cpu")
+    
+    # If you have multiple GPUs, pick the one with the most total memory
+    device_count = torch.cuda.device_count()
+    if device_count > 1:
+        best_vram = 0
+        best_idx = 0
+        for i in range(device_count):
+            vram = torch.cuda.get_device_properties(i).total_memory
+            if vram > best_vram:
+                best_vram = vram
+                best_idx = i
+        device = torch.device(f"cuda:{best_idx}")
+    else:
+        device = torch.device("cuda:0")
+    print(f"🎯 Selected Device: {torch.cuda.get_device_name(device)}")
+    print(f"✅ ROCm Backend Active. Using GPU: {torch.cuda.get_device_name(0)}")
+    return device
+
 
 def build_model(config: dict):
     """Assembles the TTS model on the detected ROCm device."""
@@ -40,8 +61,8 @@ def build_model(config: dict):
     t3_chk_name = m_cfg.get('output_checkpoint_name', 't3_cfg_ru_harm_bilat.safetensors')
     
     # ROCm identifies as 'cuda' in code
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"✅ ROCm Backend Active. Using GPU: {torch.cuda.get_device_name(0)}")
+    # In your build_model function:
+    device = get_best_device()
 
     # 1. Tokenizer & Dynamic Vocab
     tokenizer = EnTokenizer(tokenizer_path)
@@ -57,30 +78,32 @@ def build_model(config: dict):
     ve = VoiceEncoder()
     ve.load_state_dict(load_file(ckpt_dir / "ve.safetensors"))
     
+    
     t3 = T3(hp=hp)
     t3.load_state_dict(load_file(ckpt_dir / t3_chk_name))
-
+    t3= t3.to(device)
+    
     s3gen = S3Gen()
     s3gen.load_state_dict(load_file(ckpt_dir / "s3gen.safetensors"), strict=False)
-
+    s3gen = s3gen.to(device)
+    
     # 4. Handle Conditionals
     conds = None
     voice_path = ckpt_dir / "conds.pt"
     if voice_path.exists():
         conds = Conditionals.load(voice_path, map_location=device)
+    conds = conds.to(device)
+    if conds is not None and hasattr(conds, 't3'):
+        conds.t3.emotion_adv = conds.t3.emotion_adv.to(device)
 
     # 5. Assembly
     model = ChatterboxTTS(t3, s3gen, ve, tokenizer, device, conds)
-    model.t3.to(device).eval()
-    model.s3gen.to(device).eval()
-    model.voice_encoder.to(device).eval()
-    
     return model
 
 # --- 3. ENTRY POINT ---
 
 def main():
-    try:
+
         config = load_config()
         model = build_model(config)
         
@@ -94,7 +117,7 @@ def main():
         
         print(f"🎙️ Generating main audio...")
         # SDPA context is crucial for AMD performance
-        with torch.inference_mode(), torch.nn.attention.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=True):
+        with torch.inference_mode():
             wav = model.generate(text=text)
         
         # Save results
@@ -105,9 +128,12 @@ def main():
         ta.save(str(save_path), wav.cpu(), model.sr)
         print(f"🎉 Success! Audio saved to: {save_path}")
 
+if __name__ == "__main__":
+    try:
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        main()
     except Exception as e:
         print(f"❌ Error: {e}")
         sys.exit(1)
-
-if __name__ == "__main__":
-    main()

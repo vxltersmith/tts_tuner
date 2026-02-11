@@ -25,36 +25,7 @@ def load_config():
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-def build_tts_model(config):
-    m_cfg = config.get('merge_embeddings', {})
-    ckpt_dir = Path(m_cfg.get('ckpt_dir', './data/temp_model'))
-    tokenizer_path = m_cfg.get('target_tokenizer', './data/en_ru_tokenizer.json')
-    t3_chk_name = m_cfg.get('output_checkpoint_name', 't3_cfg_ru_harm_bilat.safetensors')
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    tokenizer = EnTokenizer(tokenizer_path)
-    hp = T3Config.english_only()
-    hp.text_tokens_dict_size = tokenizer.tokenizer.get_vocab_size()
-
-    ve = VoiceEncoder()
-    ve.load_state_dict(load_file(ckpt_dir / "ve.safetensors"))
-    t3 = T3(hp=hp)
-    t3.load_state_dict(load_file(ckpt_dir / t3_chk_name))
-    s3gen = S3Gen()
-    s3gen.load_state_dict(load_file(ckpt_dir / "s3gen.safetensors"), strict=False)
-
-    conds = None
-    voice_path = ckpt_dir / "conds.pt"
-    if voice_path.exists():
-        conds = Conditionals.load(voice_path, map_location=device)
-
-    model = ChatterboxTTS(t3, s3gen, ve, tokenizer, device, conds)
-    model.t3.to(device).eval()
-    model.s3gen.to(device).eval()
-    model.voice_encoder.to(device).eval()
-    
-    return model
+from run_tts import build_model
 
 # --- 2. METRICS & PIPELINE ---
 
@@ -70,7 +41,7 @@ def calculate_metrics(original, transcribed):
 def run_pipeline():
     # Load Configuration and Build TTS
     config = load_config()
-    tts_model = build_tts_model(config)
+    tts_model = build_model(config)
     
     # Initialize ASR
     print("Loading Whisper 'tiny' model...")
@@ -78,8 +49,7 @@ def run_pipeline():
 
     # Load Dataset (Adjust 'path' and 'name' as needed)
     print("Loading dataset...")
-    ds = load_dataset("common_voice", "ru", split="test", streaming=True)
-
+    ds = load_dataset("Vikhrmodels/ToneSpeak", split="train", streaming=True)
     results = []
 
     for i, item in enumerate(ds):

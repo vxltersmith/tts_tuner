@@ -4,7 +4,7 @@ openai-whisper
 Levenshtein
 pyyaml
 safetensors
-transformers==4.46.3 --no-deps
+transformers==4.46.3
 tokenizers==0.20
 einops
 s3tokenizer
