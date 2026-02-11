@@ -1,5 +1,8 @@
 .venv/
+venv/
+data/
 __pycache__/
 hf_cache/
 data/
 .ipynb_checkpoints/
+run_tts.py

@@ -1,7 +1,18 @@
-torch==2.6.0 
-torchvision==0.21.0 
-torchaudio==2.6.0 
-xformers --index-url https://download.pytorch.org/whl/cu124
+librosa
 datasets
 openai-whisper
 Levenshtein
+pyyaml
+safetensors
+transformers==4.46.3 --no-deps
+tokenizers==0.20
+einops
+s3tokenizer
+conformer==0.3.2 
+diffusers==0.29.0
+gradio==5.44.1 
+omegaconf 
+pykakasi==2.3.0 
+pyloudnorm 
+resemble-perth==1.0.1 
+spacy-pkuseg

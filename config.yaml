@@ -1,0 +1,52 @@
+paths:
+  model_dir: "./data/temp_model"
+  tokenizer_en: "./data/temp_model/tokenizer.json"
+  tokenizer_ru: "./data/en_ru_tokenizer.json"
+  tokenizer_output: "./data/en_ru_tokenizer.json"
+  output_dir: "./data"
+  checkpoint_dir: "./data"
+  whisper_model: "openai/whisper-small.en"
+
+models:
+  voice_encoder: "./data/temp_model/ve.safetensors"
+  t3_checkpoint: "./data/temp_model/t3_cfg.safetensors"
+  t3_checkpoint_ru: "./data/temp_model/t3_cfg_ru_harm.safetensors"
+  s3gen_checkpoint: "./data/temp_model/s3gen.safetensors"
+  voice_conditional: "./data/temp_model/conds.pt"
+  tokenizer_source: "./data/temp_model/tokenizer.json"
+
+tokenizer:
+  vocab_size: 2000
+  special_tokens:
+    - "[UNK]"
+    - "[CLS]"
+    - "[SEP]"
+    - "[PAD]"
+
+tts:
+  text_tokens_dict_size: 786
+  device: "cuda"
+
+train_tokenizer:
+  dataset: "Vikhrmodels/ToneSpeak"
+  split: "train"
+  temp_dir: "./data/temp"
+  output_dir: "./data/ru_bpe_2000"
+  min_frequency: 10
+  cache_dir: "./hf_cache"
+
+merge_embeddings:
+  target_tokenizer: "./data/en_ru_tokenizer.json"
+  source_tokenizer: "./data/temp_model/tokenizer.json"
+  checkpoint: "./data/temp_model/t3_cfg.safetensors"
+  output_checkpoint: "./data/temp_model/t3_cfg_ru_harm_bilat.safetensors"
+  share_vocab_size: 704
+  law: "harm"
+  sigma_r: 0.4
+  p: 3.0
+  alpha: 0.6
+
+run_tts:
+  voice: "моя киса, мой котёнок!"
+  output_suffix: ""
+  map_location: "cpu"

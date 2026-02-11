@@ -1,4 +1,4 @@
-from src.chatterbox.models.tokenizers.tokenizer import EnTokenizer
+from chatterbox.models.tokenizers.tokenizer import EnTokenizer
 from tokenizers import Tokenizer
 import json
 
