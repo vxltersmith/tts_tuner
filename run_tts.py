@@ -47,8 +47,19 @@ def get_best_device():
         device = torch.device(f"cuda:{best_idx}")
     else:
         device = torch.device("cuda:0")
-    print(f"🎯 Selected Device: {torch.cuda.get_device_name(device)}")
-    print(f"✅ ROCm Backend Active. Using GPU: {torch.cuda.get_device_name(0)}")
+        
+    device_name = torch.cuda.get_device_name(device)
+    print(f"🎯 Selected Device: {device_name}")
+    if "AMD" in device_name:
+        print(f"✅ ROCm Backend Active.")
+        # Force MIOpen to use a specific workspace size (in MB)
+        import os
+        # Tell MIOpen to find and cache the best kernels immediately
+        os.environ["MIOPEN_FIND_ENFORCE"] = "1"
+        # Increase the limit for device memory allocation
+        os.environ["MIOPEN_DEVICE_MEMORY_MAX"] = "100" # Use 100% of available slice
+        os.environ["MIOPEN_DEBUG_CONVOLUTION_MAX_WORKSPACE"] = "2048" # Increase workspace
+        os.environ["MIOPEN_FIND_ENFORCE"] = "1" # Force kernel search
     return device
 
 
@@ -103,30 +114,29 @@ def build_model(config: dict):
 # --- 3. ENTRY POINT ---
 
 def main():
-
-        config = load_config()
-        model = build_model(config)
-        
-        # Text for synthesis
-        text = "меня зовут андрей иванов. я живу в тайланде на острове пхукет уже целый год"
-        
-        print("⚡ Warming up ROCm kernels...")
-        # Brief warmup to avoid JIT lag during the main generation
-        with torch.inference_mode():
-            _ = model.generate(text="warmup")
-        
-        print(f"🎙️ Generating main audio...")
-        # SDPA context is crucial for AMD performance
-        with torch.inference_mode():
-            wav = model.generate(text=text)
-        
-        # Save results
-        output_dir = Path("./data/outputs")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        save_path = output_dir / "output_rocm.mp3"
-        
-        ta.save(str(save_path), wav.cpu(), model.sr)
-        print(f"🎉 Success! Audio saved to: {save_path}")
+    config = load_config()
+    model = build_model(config)
+    
+    # Text for synthesis
+    text = "меня зовут андрей иванов. я живу в тайланде на острове пхукет уже целый год"
+    
+    print("⚡ Warming up ROCm kernels...")
+    # Brief warmup to avoid JIT lag during the main generation
+    with torch.inference_mode():
+        _ = model.generate(text="warmup")
+    
+    print(f"🎙️ Generating main audio...")
+    # SDPA context is crucial for AMD performance
+    with torch.inference_mode():
+        wav = model.generate(text=text)
+    
+    # Save results
+    output_dir = Path("./data/outputs")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    save_path = output_dir / "output_rocm.mp3"
+    
+    ta.save(str(save_path), wav.cpu(), model.sr)
+    print(f"🎉 Success! Audio saved to: {save_path}")
 
 if __name__ == "__main__":
     try:

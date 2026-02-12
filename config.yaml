@@ -5,7 +5,7 @@ paths:
   tokenizer_output: "./data/en_ru_tokenizer.json"
   output_dir: "./data"
   checkpoint_dir: "./data"
-  whisper_model: "openai/whisper-small.en"
+
 
 models:
   voice_encoder: "./data/temp_model/ve.safetensors"
@@ -46,6 +46,10 @@ merge_embeddings:
   p: 3.0
   alpha: 0.6
 
+validation:
+  dataset_key: "Vikhrmodels/ToneSpeak"
+  whisper_model: "openai/whisper-small.en"
+  
 run_tts:
   voice: "моя киса, мой котёнок!"
   output_suffix: ""
