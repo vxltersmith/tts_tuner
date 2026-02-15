@@ -20,24 +20,6 @@ def load_config(config_path="./config.yaml"):
     with open(path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-def harmonic_phonetic_map(text: str) -> str:
-    """
-    Map Russian Cyrillic to English phonetic clusters.
-    FIX: 'ъ' (Hard Sign) now maps to a space to ensure a valid token is returned.
-    """
-    mapping = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
-        'е': 'ye', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'ee',
-        'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
-        'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
-        'у': 'oo', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch',
-        'ш': 'sh', 'щ': 'sh', 
-        'ъ': ' ', 
-        'ы': 'ui', 'ь': 'i',
-        'э': 'e', 'ю': 'yu', 'я': 'ya'
-    }
-    return ''.join(mapping.get(char.lower(), char) for char in text)
-
 def load_safetensors(file_path: Union[str, Path]) -> Dict[str, torch.Tensor]:
     print(f"📂 Loading weights: {file_path}")
     state_dict = {}
