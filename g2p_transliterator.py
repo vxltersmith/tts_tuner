@@ -73,7 +73,6 @@ class TokenizerAligner:
     def find_phonetic_composites(self, ru_text):
         """
         Instead of one match for the whole word, find matches for phonetic segments.
-        'Мага' -> ['ma', 'ga']
         """
         ru_ipa = self.epi_ru.transliterate(ru_text)
         
@@ -94,7 +93,7 @@ class TokenizerAligner:
             if matches:
                 final_composition.append(matches[0][0]) # Take the best match for this slice
                 
-        return list(set(final_composition)) # Unique English building blocks
+        return ''.join(final_composition) # Unique English building blocks
 
 def phonetic_map(text: str, mapping: dict) -> str:
     """
@@ -103,18 +102,30 @@ def phonetic_map(text: str, mapping: dict) -> str:
     """
     return ''.join(mapping.get(char.lower(), char) for char in text)
 
+
+def get_aligner(tokenizer_path=None):
+    if tokenizer_path is None: return tokenizer_path
+    
+    tokenizer_aligner = TokenizerAligner(tokenizer_path)
+    return tokenizer_aligner
+
 def get_mapping(text:str, aligner=None, tokenizer_path=None) :
     if aligner is None:
         if tokenizer_path is None: 
             return phonetic_map(text, DEFAULT_MAPPING)
-        
-        tokenizer_aligner = TokenizerAligner(tokenizer_path)
+        tokenizer_aligner = get_aligner(tokenizer_path)
     else:
          tokenizer_aligner = aligner
     discoveries = tokenizer_aligner.find_phonetic_composites(text)
     return discoveries
 
 if __name__ == "__main__":
-    discoveries = get_mapping("привет", tokenizer_path="./data/temp_model/tokenizer.json")
+    input_text = "мага"
+    tokenizer_path ="./data/temp_model/tokenizer.json"
+    
+    discoveries = get_mapping(input_text, tokenizer_path=tokenizer_path)
+    
+    print("Input Text:", input_text)
+    print("Discovered Phonetic Clusters:", discoveries)  # Output: ['привет', 'привет']
     print(discoveries)
     print('-----finished---------')

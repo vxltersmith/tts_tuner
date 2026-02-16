@@ -1,14 +1,18 @@
 import sys
 import yaml
+
 import torch
 import math
+
 from pathlib import Path
 from typing import Dict, List, Tuple, Union, Optional
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-# Assuming Chatterbox is installed in your .venv
+# Assuming Chatterbox is installed in .venv
 from chatterbox.models.tokenizers.tokenizer import EnTokenizer
+from g2p_transliterator import get_mapping, get_aligner
+
 
 # --- 1. CONFIG & UTILS ---
 
@@ -125,6 +129,9 @@ def merge_token_embeddings(tokenizer_src, tokenizer_tgt, src_emb, src_head, conf
     
     m_cfg = config['merge_embeddings']
     backbone_size = m_cfg.get('share_vocab_size', 704)
+    ipa_conf = m_cfg.get("ipa", {})
+    tokenizer_path = ipa_conf.get('tokenizer_path', None)
+    ipa_aligner = get_aligner(tokenizer_path)
     
     # Copy backbone embeddings
     if new_emb[:backbone_size].shape == src_emb[:backbone_size].shape:
@@ -141,18 +148,26 @@ def merge_token_embeddings(tokenizer_src, tokenizer_tgt, src_emb, src_head, conf
     print(f" Starting grafting {new_size - backbone_size} new tokens...")
     print(f" Embedding dimension: {dim}, Backbone size: {backbone_size}, New vocab: {new_size}")
 
+    
+    unmapped_tokens = []
     for token, token_id in tokenizer_tgt.tokenizer.get_vocab().items():
         if token_id < backbone_size: continue
-
+        if "[" in token: continue 
+            
         # 1. Phonetic Mapping
-        word = harmonic_phonetic_map(token)
+        word = get_mapping(token, aligner=ipa_aligner)
+        print(f"Mapped '{token}' to '{word}'")
         
-        # IMPORTANT: Strip whitespace to catch tokens that result in "" 
-        # or just whitespace that the tokenizer might ignore.
         clean_word = word.strip() if word != ' ' else word
+        if len(clean_word) == 0: 
+            word = get_mapping(token) # trying to fallback to hardcoded mapping
+            print(f"projected '{token}' to '{word}' via fallback mapping")
+            if len(word) == 0:
+                print(f"Fallback failed, Skipping token '{token}'")
+                unmapped_tokens.append(token)
+                continue
+            clean_word = word
         ids = tokenizer_src.tokenizer.encode(clean_word).ids
-        
-        # FINAL SAFETY: If tokenizer.encode still returns [] for any reason
         if not ids or len(ids) == 0:
             ids = tokenizer_src.tokenizer.encode(" ").ids
         
@@ -200,9 +215,10 @@ def merge_token_embeddings(tokenizer_src, tokenizer_tgt, src_emb, src_head, conf
         if graft_count % 100 == 0:
             print(f"{graft_count}/{new_size - backbone_size} tokens grafted")
 
+    skip_count = len(unmapped_tokens) 
     print(f"✅ Grafting complete! {graft_count}/{new_size - backbone_size} tokens successfully grafted")
     print(f"⚠️ Stats: Skipped {skip_count}, Errors {error_count}")
-    
+    print(f"New vocab size: {new_size}, New backbone size: {backbone_size}")
     return new_emb, new_head
 
 def main():
@@ -258,6 +274,7 @@ def main():
     if 'alpha' not in m_cfg:
         raise ValueError("Config missing required parameter: alpha")
     
+    # Start of logic ##############
     print()
     print("Starting embedding grafting...")
     new_emb, new_head = merge_token_embeddings(

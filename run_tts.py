@@ -48,6 +48,7 @@ def get_best_device():
         os.environ["MIOPEN_DEVICE_MEMORY_MAX"] = "100" # Use 100% of available slice
         os.environ["MIOPEN_DEBUG_CONVOLUTION_MAX_WORKSPACE"] = "2048" # Increase workspace
         os.environ["MIOPEN_FIND_ENFORCE"] = "1" # Force kernel search
+        os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "1"
     return device
 
 
@@ -57,7 +58,7 @@ def build_model(config: dict):
     
     ckpt_dir = Path(m_cfg.get('ckpt_dir', './data/temp_model'))
     tokenizer_path = m_cfg.get('target_tokenizer', './data/en_ru_tokenizer.json')
-    t3_chk_name = m_cfg.get('output_checkpoint_name', 't3_cfg_ru_harm_bilat.safetensors')
+    t3_chk_name = m_cfg.get('output_checkpoint', 't3_cfg.safetensors').split('/')[-1]
     
     # ROCm identifies as 'cuda' in code
     # In your build_model function:
@@ -96,6 +97,9 @@ def build_model(config: dict):
         conds.t3.emotion_adv = conds.t3.emotion_adv.to(device)
 
     # 5. Assembly
+    t3 = torch.compile(t3)
+    s3gen = torch.compile(s3gen)
+    ve = torch.compile(ve)
     model = ChatterboxTTS(t3, s3gen, ve, tokenizer, device, conds)
     return model
 

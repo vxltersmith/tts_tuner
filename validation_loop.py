@@ -1,17 +1,14 @@
 import os
 import sys
+sys.modules["torchcodec"] = None
 import torch
 import torchaudio as ta
 import whisper
 import yaml
 from pathlib import Path
 from Levenshtein import distance as lev_dist
+import torchaudio as ta
 
-# --- 1. GLOBAL FIXES (MUST BE AT TOP) ---
-# Prevent the FFmpeg/torchcodec crash
-sys.modules["torchcodec"] = None
-
-import os
 import datasets
 datasets.config.USE_TORCHCODEC = False # Redundant safety
 
@@ -48,10 +45,13 @@ def calculate_metrics(original, transcribed):
 def run_pipeline():
     config = load_config()
     tts_model = build_model(config)
+    save_path = config.get("validation", {}).get("save_path", "./data/temp.wav")
+    
     
     print("Loading Whisper 'tiny' model...")
     asr_model = whisper.load_model("tiny")
-
+    asr_model = torch.compile(asr_model)
+    
     print("Loading dataset...")
     ds = get_dataset(config)
     results = []
@@ -67,17 +67,18 @@ def run_pipeline():
 
         # 1. Synthesize Audio
         with torch.inference_mode():
-            wav = tts_model.generate(text=input_text)
+            wav = tts_model.generate(text=input_text).cpu()
         
         # 2. Whisper
-        tts_wav_16k = resampler(wav.cpu())
+        tts_wav_16k = resampler(wav)
         tts_wav_16k = tts_wav_16k.squeeze().numpy()
         tts_asr_result = asr_model.transcribe(tts_wav_16k, language="ru")
+        if save_path is not None:
+            ta.save(save_path, wav.cpu(), tts_model.sr)
         
         audio_Wav_16k = resampler(torch.tensor(audio_input, dtype=torch.float32))
         audio_Wav_16k = audio_Wav_16k.squeeze().numpy()
         asr_result = asr_model.transcribe(audio_Wav_16k, language="ru")
-        
         
         transcribed_text = tts_asr_result["text"].strip()
         transcribed_text_orig = asr_result["text"].strip()
