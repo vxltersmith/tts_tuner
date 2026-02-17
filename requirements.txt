@@ -16,3 +16,14 @@ pykakasi==2.3.0
 pyloudnorm 
 resemble-perth==1.0.1 
 spacy-pkuseg
+peft==0.17.1
+
+silero-vad==6.2.0
+soundfile==0.13.1
+num2words
+ffmpeg-python
+tqdm
+pandas
+tensorboard
+hf_transfer
+gdown
