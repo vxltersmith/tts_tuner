@@ -1,16 +1,14 @@
 paths:
   model_dir: "./data/temp_model"
-  tokenizer_en: "./data/temp_model/tokenizer.json"
-  tokenizer_ru: "./data/en_ru_tokenizer.json"
-  tokenizer_output: "./data/en_ru_tokenizer.json"
-  output_dir: "./data"
-  checkpoint_dir: "./data"
+  cache_dir: "./hf_cache"
+  output_dir: "./data/"
+  checkpoint_dir: "./data/"
 
 
 models:
   voice_encoder: "./data/temp_model/ve.safetensors"
   t3_checkpoint: "./data/temp_model/t3_cfg.safetensors"
-  t3_checkpoint_ru: "./data/temp_model/t3_cfg_ru_harm.safetensors"
+  t3_checkpoint_ru: "./data/temp_model/t3_cfg_am.safetensors"
   s3gen_checkpoint: "./data/temp_model/s3gen.safetensors"
   voice_conditional: "./data/temp_model/conds.pt"
   tokenizer_source: "./data/temp_model/tokenizer.json"
@@ -23,8 +21,15 @@ tokenizer:
     - "[SEP]"
     - "[PAD]"
 
+merge_vocabs:
+  tokenizer_en: "./data/temp_model/tokenizer.json"
+  tokenizer_ru: "./data/ru_bpe_2000/tokenizer.json"
+  tokenizer_output: "./data/en_ru_tokenizer.json"
+  test_string: "синхрофазотрон"
+  cut_vocab_offset: 18
+
 tts:
-  text_tokens_dict_size: 786
+  text_tokens_dict_size: null
   device: "cuda"
 
 train_tokenizer:
@@ -39,7 +44,7 @@ merge_embeddings:
   target_tokenizer: "./data/en_ru_tokenizer.json"
   source_tokenizer: "./data/temp_model/tokenizer.json"
   checkpoint: "./data/temp_model/t3_cfg.safetensors"
-  output_checkpoint: "./data/temp_model/t3_cfg_ru_harm_bilat.safetensors"
+  output_checkpoint: "./data/temp_model/t3_cfg_am.safetensors"
   ipa:
     tokenizer_path: "./data/temp_model/tokenizer.json"
     lang_in: "ru"

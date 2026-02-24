@@ -75,7 +75,7 @@ def run_pipeline():
         tts_asr_result = asr_model.transcribe(tts_wav_16k, language="ru")
         if save_path is not None:
             ta.save(save_path, wav.cpu(), tts_model.sr)
-        
+
         audio_Wav_16k = resampler(torch.tensor(audio_input, dtype=torch.float32))
         audio_Wav_16k = audio_Wav_16k.squeeze().numpy()
         asr_result = asr_model.transcribe(audio_Wav_16k, language="ru")
