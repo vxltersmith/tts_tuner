@@ -1,0 +1,17 @@
+peft==0.17.1
+
+silero-vad==6.2.0
+librosa==0.11.0
+soundfile==0.13.1
+num2words
+ffmpeg-python
+tqdm
+pandas
+safetensors
+tensorboard
+omegaconf
+hf_transfer
+pyloudnorm
+gdown
+resemble-perth
+einops

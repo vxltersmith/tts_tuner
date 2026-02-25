@@ -1,5 +1,7 @@
 import sys
 
+import os
+
 import torch
 import torchaudio as ta
 from pathlib import Path
@@ -49,16 +51,25 @@ def get_best_device():
         os.environ["MIOPEN_DEBUG_CONVOLUTION_MAX_WORKSPACE"] = "2048" # Increase workspace
         os.environ["MIOPEN_FIND_ENFORCE"] = "1" # Force kernel search
         os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "1"
+        # ROCm GFX Override for NucBox (7900 XT / 780M)
+        if torch.version.hip:
+            os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
     return device
 
 
 def build_model(config: dict):
     """Assembles the TTS model on the detected ROCm device."""
     m_cfg = config.get('merge_embeddings', {})
+    path_cfg = config.get("paths", {})
+    ckpt_dir = path_cfg.get("ckpt_dir", None)
     
-    ckpt_dir = Path(m_cfg.get('ckpt_dir', './data/temp_model'))
-    tokenizer_path = m_cfg.get('target_tokenizer', './data/en_ru_tokenizer.json')
-    t3_chk_name = m_cfg.get('output_checkpoint', 't3_cfg.safetensors').split('/')[-1]
+    if ckpt_dir is not None:
+        model = ChatterboxTTS.from_local(ckpt_dir=ckpt_dir, device="cuda")
+    else:
+        ckpt_dir = path_cfg.get('checkpoint_dir', None)
+    
+    tokenizer_path = m_cfg.get('target_tokenizer', None)
+    t3_chk_name = m_cfg.get('output_checkpoint', None).split('/')[-1]
     
     # ROCm identifies as 'cuda' in code
     # In your build_model function:
@@ -76,21 +87,21 @@ def build_model(config: dict):
     # 3. Load Components
     print(f"📦 Loading weights from {ckpt_dir}...")
     ve = VoiceEncoder()
-    ve.load_state_dict(load_file(ckpt_dir / "ve.safetensors"))
+    ve.load_state_dict(load_file(os.path.join(ckpt_dir, "ve.safetensors")))
     
     
     t3 = T3(hp=hp)
-    t3.load_state_dict(load_file(ckpt_dir / t3_chk_name))
+    t3.load_state_dict(load_file(os.path.join(ckpt_dir, t3_chk_name)))
     t3= t3.to(device)
     
     s3gen = S3Gen()
-    s3gen.load_state_dict(load_file(ckpt_dir / "s3gen.safetensors"), strict=False)
+    s3gen.load_state_dict(load_file(os.path.join(ckpt_dir, "s3gen.safetensors")), strict=False)
     s3gen = s3gen.to(device)
     
     # 4. Handle Conditionals
     conds = None
-    voice_path = ckpt_dir / "conds.pt"
-    if voice_path.exists():
+    voice_path = os.path.join(ckpt_dir, "conds.pt")
+    if os.path.exists(voice_path):
         conds = Conditionals.load(voice_path, map_location=device)
     conds = conds.to(device)
     if conds is not None and hasattr(conds, 't3'):

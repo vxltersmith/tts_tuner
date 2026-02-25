@@ -1,25 +1,32 @@
 paths:
-  model_dir: "./data/temp_model"
+  model_dir: "./data/data_correct/temp_model"
   cache_dir: "./hf_cache"
   output_dir: "./data/"
-  checkpoint_dir: "./data/"
-
+  checkpoint_dir: "./data/data_correct/temp_model"
+  ckpt_dir: "./data/data_correct/temp_model"
 
 models:
-  voice_encoder: "./data/temp_model/ve.safetensors"
-  t3_checkpoint: "./data/temp_model/t3_cfg.safetensors"
-  t3_checkpoint_ru: "./data/temp_model/t3_cfg_am.safetensors"
-  s3gen_checkpoint: "./data/temp_model/s3gen.safetensors"
-  voice_conditional: "./data/temp_model/conds.pt"
-  tokenizer_source: "./data/temp_model/tokenizer.json"
+  voice_encoder: "./data/data_correct/temp_model/ve.safetensors"
+  t3_checkpoint: "./data/data_correct/temp_model/t3_cfg.safetensors"
+  t3_checkpoint_ru: "./data/data_correct/temp_model/t3_cfg.safetensors"
+  s3gen_checkpoint: "./data/data_correct/temp_model/s3gen.safetensors"
+  voice_conditional: "./data/data_correct/temp_model/conds.pt"
+  tokenizer_source: "./data/data_correct/temp_model/tokenizer.json"
 
-tokenizer:
-  vocab_size: 2000
-  special_tokens:
-    - "[UNK]"
-    - "[CLS]"
-    - "[SEP]"
-    - "[PAD]"
+merge_embeddings:
+  target_tokenizer: "./data/data_correct/temp_model/tokenizer.json"
+  source_tokenizer: "./data/temp_model/tokenizer.json"
+  checkpoint: "./data/temp_model/t3_cfg.safetensors"
+  output_checkpoint: "./data/data_correct/temp_model/t3_cfg.safetensors"
+  ipa:
+    tokenizer_path: "./data/temp_model/tokenizer.json"
+    lang_in: "ru"
+    lang_out: "en"
+  share_vocab_size: 704
+  law: "harm"
+  sigma_r: 0.4
+  p: 3.0
+  alpha: 0.25
 
 merge_vocabs:
   tokenizer_en: "./data/temp_model/tokenizer.json"
@@ -40,24 +47,17 @@ train_tokenizer:
   min_frequency: 10
   cache_dir: "./hf_cache"
 
-merge_embeddings:
-  target_tokenizer: "./data/en_ru_tokenizer.json"
-  source_tokenizer: "./data/temp_model/tokenizer.json"
-  checkpoint: "./data/temp_model/t3_cfg.safetensors"
-  output_checkpoint: "./data/temp_model/t3_cfg_am.safetensors"
-  ipa:
-    tokenizer_path: "./data/temp_model/tokenizer.json"
-    lang_in: "ru"
-    lang_out: "en"
-  share_vocab_size: 704
-  law: "harm"
-  sigma_r: 0.4
-  p: 3.0
-  alpha: 0.25
+tokenizer:
+  vocab_size: 2000
+  special_tokens:
+    - "[UNK]"
+    - "[CLS]"
+    - "[SEP]"
+    - "[PAD]"
 
 validation:
   dataset_key: "Vikhrmodels/ToneSpeak"
-  whisper_model: "openai/whisper-small.en"
+  whisper_model: "tiny"
   
 run_tts:
   voice: "моя киса, мой котёнок!"
