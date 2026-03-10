@@ -11,7 +11,7 @@ from safetensors.torch import save_file
 
 # Assuming Chatterbox is installed in .venv
 from chatterbox.models.tokenizers.tokenizer import EnTokenizer
-from g2p_transliterator import get_mapping, get_aligner
+from proto_g2p_transliterator import get_mapping, get_aligner
 
 
 # --- 1. CONFIG & UTILS ---

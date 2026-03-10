@@ -3,7 +3,7 @@ paths:
   cache_dir: "./hf_cache"
   output_dir: "./data/"
   checkpoint_dir: "./data/data_correct/temp_model"
-  ckpt_dir: "./data/data_correct/temp_model"
+  ckpt_dir: "/home/vxltxr/repos/tts_tuner/chatterbox/ammar"
 
 models:
   voice_encoder: "./data/data_correct/temp_model/ve.safetensors"
@@ -56,7 +56,7 @@ tokenizer:
 
 validation:
   dataset_key: "Vikhrmodels/ToneSpeak"
-  whisper_model: "tiny"
+  whisper_model: "large"
   
 run_tts:
   voice: "моя киса, мой котёнок!"

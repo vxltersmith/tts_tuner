@@ -65,6 +65,7 @@ def build_model(config: dict):
     
     if ckpt_dir is not None:
         model = ChatterboxTTS.from_local(ckpt_dir=ckpt_dir, device="cuda")
+        return model
     else:
         ckpt_dir = path_cfg.get('checkpoint_dir', None)
     

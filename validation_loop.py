@@ -15,8 +15,9 @@ def run_pipeline():
     
     val_conf = config.get("validation", {})
     
-    print("Loading Whisper 'tiny' model...")
-    asr_model = whisper.load_model(val_conf.get("whisper_model"))
+    whisper_ckp = val_conf.get("whisper_model")
+    print(f"Loading Whisper {whisper_ckp} model...")
+    asr_model = whisper.load_model(whisper_ckp)
     asr_model = torch.compile(asr_model)
     
     print("Loading dataset...")
@@ -55,10 +56,10 @@ def run_pipeline():
         print(f"Audio-ASR Output: {transcribed_text_orig}")
 
         # 3. Calculate metric
-        dist_rel, cer_rel = calculate_metrics(transcribed_text_orig, transcribed_text)
-        dist, cer = calculate_metrics(input_text, transcribed_text)
-        print(f"Levenshtein: {dist} | CER: {cer:.2%}")
-        print(f"Relative:: Levenshtein: {dist_rel} | CER: {cer_rel:.2%}")
+        wer_rel, cer_rel = calculate_metrics(transcribed_text_orig, transcribed_text)
+        wer, cer = calculate_metrics(input_text, transcribed_text)
+        print(f"WER: {wer:.2%} | CER: {cer:.2%}")
+        print(f"Relative WER: {wer_rel:.2%} | CER: {cer_rel:.2%}")
         results.append(cer)
         
         continue

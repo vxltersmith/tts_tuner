@@ -15,7 +15,10 @@
             "env": {
                 "HIP_VISIBLE_DEVICES": "0",
                 "HSA_OVERRIDE_GFX_VERSION": "11.0.0",
-                "MIOPEN_DEBUG_CONVOLUTION_REWIND": "1"
+                "MIOPEN_DEBUG_CONVOLUTION_REWIND": "1",
+                "NCCL_P2P_DISABLE": "1",
+                "TORCH_BLAS_PREFER_HIPBLASLT": "1",
+                "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL": "1", 
             }
         }
     ]

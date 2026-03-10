@@ -1,4 +1,4 @@
-from Levenshtein import distance as lev_dist
+import jiwer
 import datasets
 datasets.config.USE_TORCHCODEC = False # Redundant safety
 
@@ -15,9 +15,63 @@ def get_dataset(config):
 
 # --- 3. METRICS & PIPELINE ---
 
-def calculate_metrics(original, transcribed):
-    orig = original.lower().strip().replace(".", "").replace(",", "")
-    tran = transcribed.lower().strip().replace(".", "").replace(",", "")
-    d = lev_dist(orig, tran)
-    cer = d / max(len(orig), 1)
-    return d, cer
+def get_standard_transformation():
+    return jiwer.Compose([
+        jiwer.ToLowerCase(),
+        jiwer.RemovePunctuation(),
+        jiwer.RemoveMultipleSpaces(),
+        jiwer.Strip(),
+    ])
+    
+    
+def calculate_metrics(original, transcribed, transformation=None):
+    if transformation is None:
+        transformation = get_standard_transformation()
+
+    wer = calculate_advanced_wer(transcribed, original, transformation=transformation)
+    cer = calculate_advanced_cer(transcribed, original, transformation=transformation)
+    return wer, cer
+
+
+def calculate_advanced_wer(hypothesis_text, reference_text, transformation):
+    """
+    Standard deterministic WER implementation.
+    1. Transcribes audio via ASR
+    2. Normalizes both texts (removes punctuation/casing)
+    3. Calculates Levenshtein-based WER
+    """
+    transform = jiwer.Compose([
+            transformation,
+            jiwer.ReduceToListOfListOfWords() # Crucial: wraps words in nested lists
+        ])
+
+    # 3. Apply deterministic calculation
+    wer_score = jiwer.wer(
+        reference_text, 
+        hypothesis_text, 
+        reference_transform=transform, 
+        hypothesis_transform=transform
+    )
+    
+    return wer_score
+    
+def calculate_advanced_cer(hypothesis_text, reference_text, transformation):
+    """
+    Standard deterministic WER implementation.
+    1. Transcribes audio via ASR
+    2. Normalizes both texts (removes punctuation/casing)
+    3. Calculates Levenshtein-based WER
+    """
+    transform = jiwer.Compose([
+        transformation,
+        jiwer.ReduceToListOfListOfChars()
+    ])
+    # 3. Apply deterministic calculation
+    wer_score = jiwer.cer(
+        reference_text, 
+        hypothesis_text, 
+        reference_transform=transform, 
+        hypothesis_transform=transform
+    )
+    
+    return wer_score
