@@ -396,155 +396,6 @@ from transliterate import translit
 def transliterate_ru_to_latin(text: str) -> str:
     return translit(text, 'ru', reversed=True)
 
-# def transliterate_ru_to_latin(text: str) -> str:
-#     """
-#     Transliterates Russian Cyrillic to English-friendly phonetic spelling.
-#     Uses a two-stage mapping: Russian → IPA → English Phonetic
-
-#     This provides more accurate pronunciation representation for tokenizer compatibility.
-#     """
-
-#     # Stage 1: Russian Cyrillic → IPA (International Phonetic Alphabet)
-#     cyrillic_to_ipa = {
-#         # Vowels
-#         'а': 'a',      # /a/
-#         'о': 'o',      # /o/
-#         'у': 'u',      # /u/
-#         'э': 'e',      # /e/
-#         'ы': 'i',      # /ɨ/ → simplified to /i/
-#         'и': 'i',      # /i/
-#         'е': 'ye',     # /je/ after consonants, /e/ elsewhere
-#         'ё': 'yo',     # /jo/
-#         'ю': 'yu',     # /ju/
-#         'я': 'ya',     # /ja/
-
-#         # Consonants - Voiced
-#         'б': 'b',      # /b/
-#         'в': 'v',      # /v/
-#         'г': 'g',      # /g/
-#         'д': 'd',      # /d/
-#         'ж': 'zh',     # /ʒ/
-#         'з': 'z',      # /z/
-#         'л': 'l',      # /l/
-#         'м': 'm',      # /m/
-#         'н': 'n',      # /n/
-#         'р': 'r',      # /r/
-
-#         # Consonants - Voiceless
-#         'п': 'p',      # /p/
-#         'ф': 'f',      # /f/
-#         'к': 'k',      # /k/
-#         'т': 't',      # /t/
-#         'ш': 'sh',     # /ʃ/
-#         'щ': 'shh',    # /ɕː/ → long sh
-#         'с': 's',      # /s/
-#         'х': 'kh',     # /x/ → guttural h
-#         'ц': 'ts',     # /ts/
-#         'ч': 'ch',     # /tʃ/
-
-#         # Semi-vowels
-#         'й': 'y',      # /j/
-
-#         # Silent markers
-#         'ъ': '',       # hard sign (silent)
-#         'ь': '',       # soft sign (palatalizes previous, silent)
-#     }
-
-#     # Uppercase mapping
-#     cyrillic_to_ipa_upper = {k.upper(): v.capitalize() if v else '' 
-#                               for k, v in cyrillic_to_ipa.items()}
-#     cyrillic_to_ipa.update(cyrillic_to_ipa_upper)
-
-#     # Stage 2: IPA → English Phonetic Optimizations
-#     # These rules make the IPA more compatible with English tokenizers
-#     ipa_to_english = {
-#         'zh': 'zh',    # kept (as in "pleasure")
-#         'sh': 'sh',    # kept (as in "ship")
-#         'shh': 'sh',   # simplified (щ → sh, not shh)
-#         'kh': 'h',     # simplified (х → h, not kh, for English compatibility)
-#         'ch': 'ch',    # kept (as in "church")
-#         'ts': 'ts',    # kept (as in "tsunami")
-#         'ye': 'ye',    # kept (as in "yes")
-#         'yo': 'yo',    # kept (as in "yonder")
-#         'yu': 'yu',    # kept (as in "yule")
-#         'ya': 'ya',    # kept (as in "yard")
-#         'y': 'y',      # kept
-#     }
-
-#     # Special context rules (apply before main mapping)
-#     result = []
-#     i = 0
-#     text_lower = text.lower()
-
-#     while i < len(text):
-#         char = text[i]
-
-#         # Handle special cases
-#         if char in 'ЕеЁёЮюЯя':
-#             # These vowels are 'ye', 'yo', 'yu', 'ya' at start of word or after vowels/soft signs
-#             if i == 0 or (i > 0 and text[i-1] in 'ъьЪЬ'):
-#                 if char in 'Ее':
-#                     result.append('Ye' if char.isupper() else 'ye')
-#                 elif char in 'Ёё':
-#                     result.append('Yo' if char.isupper() else 'yo')
-#                 elif char in 'Юю':
-#                     result.append('Yu' if char.isupper() else 'yu')
-#                 elif char in 'Яя':
-#                     result.append('Ya' if char.isupper() else 'ya')
-#                 i += 1
-#                 continue
-#             else:
-#                 # After consonants: е→e, ё→o, ю→u, я→a (with palatalization implied)
-#                 if char in 'Ее':
-#                     result.append('E' if char.isupper() else 'e')
-#                 elif char in 'Ёё':
-#                     result.append('O' if char.isupper() else 'o')
-#                 elif char in 'Юю':
-#                     result.append('U' if char.isupper() else 'u')
-#                 elif char in 'Яя':
-#                     result.append('A' if char.isupper() else 'a')
-#                 i += 1
-#                 continue
-
-#         # Handle ы (special Russian vowel, no English equivalent)
-#         if char in 'ыЫ':
-#             result.append('I' if char.isupper() else 'i')
-#             i += 1
-#             continue
-
-#         # Handle х (Russian guttural, map to 'h' for English compatibility)
-#         if char in 'хХ':
-#             result.append('H' if char.isupper() else 'h')
-#             i += 1
-#             continue
-
-#         # Handle щ (long sh, simplify to 'sh')
-#         if char in 'щЩ':
-#             result.append('Sh' if char.isupper() else 'sh')
-#             i += 1
-#             continue
-
-#         # Standard mapping
-#         if char in cyrillic_to_ipa:
-#             mapped = cyrillic_to_ipa[char]
-#             # Apply IPA to English optimizations
-#             for ipa, eng in ipa_to_english.items():
-#                 if mapped.lower() == ipa.lower():
-#                     if char.isupper():
-#                         mapped = eng.capitalize()
-#                     else:
-#                         mapped = eng
-#                     break
-#             result.append(mapped)
-#         else:
-#             # Keep unchanged (numbers, punctuation, etc.)
-#             result.append(char)
-
-#         i += 1
-
-#     return ''.join(result)
-
-
 # -----------------------------------------------------------------------------
 # Test Function
 # -----------------------------------------------------------------------------
@@ -576,9 +427,6 @@ def test_transliteration():
         print(f"{status} '{russian}' → '{result}' (expected: '{expected}')")
     print("=== END TEST ===\n")
 
-
-# Run test if needed
-# test_transliteration()
 
 # -----------------------------------------------------------------------------
 # 7. Training Logic
@@ -651,56 +499,6 @@ def combined_loss(pred, target, mse_weight=1.0, cosine_weight=0.0):
     cosine = cosine_similarity_loss(pred, target)
     return mse_weight * mse + cosine_weight * cosine
 
-# def train_merger(merger, inputs, targets, epochs=50, lr=5e-4, weight_decay=0.1):
-#     optimizer = torch.optim.AdamW(merger.parameters(), lr=lr, weight_decay=weight_decay)
-#     criterion = combined_loss
-
-#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-
-#     best_loss = float('inf')
-#     best_state = None
-
-#     print(f"Training Fourier Merger with {len(inputs)} pairs, {epochs} epochs...")
-
-#     for epoch in range(epochs):
-#         total_loss = 0
-#         optimizer.zero_grad()
-
-#         indices = torch.randperm(len(inputs))
-#         batch_size = min(32, len(inputs))
-
-#         for i in range(0, len(inputs), batch_size):
-#             batch_indices = indices[i:i+batch_size]
-#             batch_loss = 0
-
-#             for idx in batch_indices:
-#                 sub_embs = inputs[idx]
-#                 target = targets[idx]
-#                 pred = merger(sub_embs)
-#                 loss = criterion(pred, target)
-#                 loss.backward()
-#                 batch_loss += loss.item()
-
-#             torch.nn.utils.clip_grad_norm_(merger.parameters(), max_norm=1.0)
-#             optimizer.step()
-#             optimizer.zero_grad()
-#             total_loss += batch_loss
-
-#         scheduler.step()
-#         avg_loss = total_loss / len(inputs)
-
-#         if avg_loss < best_loss:
-#             best_loss = avg_loss
-#             best_state = {k: v.cpu().clone() for k, v in merger.state_dict().items()}
-
-#         if (epoch + 1) % 40 == 0:
-#             print(f"Epoch {epoch+1}, Loss: {avg_loss:.6f}, Best: {best_loss:.6f}")
-
-#     if best_state:
-#         merger.load_state_dict(best_state)
-#         print(f"Restored best weights (loss: {best_loss:.6f})")
-
-#     return best_loss
 # -----------------------------------------------------------------------------
 # Updated training function (replaces iterative optimizer with closed-form)
 # -----------------------------------------------------------------------------
@@ -743,6 +541,7 @@ def load_safetensors_to_torch(file_path: str, device: str = "cpu") -> dict:
             state_dict[key] = f.get_tensor(key)
     print(f"Successfully loaded {len(state_dict)} tensors.")
     return state_dict
+
 
 # --- CONFIGURATION ---
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

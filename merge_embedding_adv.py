@@ -553,7 +553,7 @@ def solve_with_l2(X, Y, lmbda=0.1):
     W = torch.linalg.solve(XtX + regularizer, Xt @ Y)
     return W
 
-def solve_merger(merger, inputs, targets, lmbda=1e-4):   
+def solve_merger(merger, inputs, targets, lmbda=5e-1):   
     indices = torch.randperm(len(inputs))
     batch_size = min(32, len(inputs))
 
@@ -592,16 +592,38 @@ def load_safetensors_to_torch(file_path: str, device: str = "cpu") -> dict:
     print(f"Successfully loaded {len(state_dict)} tensors.")
     return state_dict
 
+from config import load_config
+import os
+
+def add_noise(emb, noise_level=0.01):
+    """
+    Pee, we use the Standard Deviation of the embedding itself 
+    to ensure the noise is proportional to the 'volume' of the signal.
+    """
+    # 1. Calculate the 'Scale' of the current embeddings
+    # We use 1% of the existing std as 'Stamatis Noise'
+    std = emb.std()
+    
+    # 2. Generate Gaussian noise
+    noise = torch.randn_like(emb) * (std * noise_level)
+    
+    # 3. Return the 'Fuzzed' embedding
+    return emb + noise
 
 def main():
     # --- CONFIGURATION ---
+    config = load_config()
+    path_config = config.get("paths")
+    source_model_dir = path_config["model_dir"]
+    merge_embeddings = config.get("merge_embeddings")
+    
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     MERGER_TYPE = "fourier"  # Options: "fourier", "slerp"
     TRAIN_MERGER = True
-    
 
     # --- LOAD MODEL ---
-    chk = load_safetensors_to_torch("./data/temp_model/t3_cfg.safetensors")
+    source_checkpont = os.path.join(source_model_dir, "t3_cfg.safetensors")
+    chk = load_safetensors_to_torch(source_checkpont)
     embed = chk["text_emb.weight"].to(DEVICE)
     embed2 = chk["text_head.weight"].to(DEVICE)
 
@@ -611,13 +633,15 @@ def main():
 
     # --- LOAD VOCABS ---
     print("\nLoading vocabulary from tokenizer.json files...")
-    vocab_old = load_vocab_from_json("./data/temp_model/tokenizer.json")
-    vocab_new = load_vocab_from_json("./data/en_ru_tokenizer.json")
+    source_tokenizer_path = os.path.join(source_model_dir, "tokenizer.json")
+    vocab_old = load_vocab_from_json(source_tokenizer_path)
+    new_vocab_size = config.get("merge_vocabs", {}).get("tokenizer_output", None)
+    vocab_new = load_vocab_from_json(new_vocab_size)
     print(f"Loaded {len(vocab_old)} old tokens, {len(vocab_new)} new tokens")
 
     # --- INIT SIMPLE TOKENIZER (No Transformers) ---
     print("\nInitializing simple tokenizer from vocab.json...")
-    tokenizer_orig = SimpleTokenizer("./data/temp_model/tokenizer.json")
+    tokenizer_orig = SimpleTokenizer(source_tokenizer_path)
     print("Tokenizer ready.")
 
     # --- DEBUG ---
@@ -722,8 +746,8 @@ def main():
             emb_list = [emb for _, emb in valid_subtokens]
 
             if len(emb_list) == 1:
-                new_embed[token_id] = emb_list[0]
-                new_embed2[token_id] = emb_list[0]
+                new_embed[token_id] = add_noise(emb_list[0])
+                new_embed2[token_id] = add_noise(emb_list[0])
                 direct_map_count += 1
             else:
                 if MERGER_TYPE == "slerp" or merger is None:
@@ -745,6 +769,26 @@ def main():
             new_embed2[token_id] = torch.randn(dim, device=DEVICE) * 0.02
             tot += 1
             failed_tokens.append((token_id, str(e)))
+        continue
+    
+    
+    with torch.no_grad():
+        english_portion = new_embed[:shared_count]
+        goal_mean = english_portion.mean()
+        goal_std = english_portion.std()
+        goal_norm = english_portion.norm(p=2, dim=1).mean()
+
+    # 2. Target the Russian part (704 onwards)
+    russian_portion = new_embed[shared_count:]
+    # Center it
+    russian_portion = (russian_portion - russian_portion.mean()) + goal_mean
+    # Scale it to match English 'Volume'
+    current_norm = russian_portion.norm(p=2, dim=1).mean()
+    russian_portion = russian_portion * (goal_norm / (current_norm + 1e-8))
+    
+    # 3. Add that subtle noise we discussed
+    noise = torch.randn_like(russian_portion) * (goal_std * 0.01)
+    new_embed[704:] = russian_portion + noise
 
     print(f"\n=== SUMMARY ===")
     print(f"Successfully mapped: {success_count} tokens")
@@ -765,9 +809,9 @@ def main():
     # --- 3. SAVE ---
     chk["text_emb.weight"] = new_embed.cpu()
     chk["text_head.weight"] = new_embed2.cpu()
-    fn = "./data/temp_model/t3_ru_fft_cfg.safetensors"
-    save_file(chk, fn)
-    print(f"\n Saved to {fn}")
+    output_path = merge_embeddings["output_checkpoint"]
+    save_file(chk, output_path)
+    print(f"\n Saved to {output_path}")
 
 if __name__ == "__main__":
     main()

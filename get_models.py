@@ -4,11 +4,7 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 import sys
 
-def load_config():
-    """Load configuration from YAML file."""
-    config_path = "./config.yaml"
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+from config import load_config
 
 import shutil
 from pathlib import Path

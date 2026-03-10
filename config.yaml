@@ -14,10 +14,9 @@ models:
   tokenizer_source: "./data/data_correct/temp_model/tokenizer.json"
 
 merge_embeddings:
-  target_tokenizer: "./data/data_correct/temp_model/tokenizer.json"
   source_tokenizer: "./data/temp_model/tokenizer.json"
   checkpoint: "./data/temp_model/t3_cfg.safetensors"
-  output_checkpoint: "./data/data_correct/temp_model/t3_cfg.safetensors"
+  output_checkpoint: "./data/data_correct/temp_model/t3_out_cfg.safetensors"
   ipa:
     tokenizer_path: "./data/temp_model/tokenizer.json"
     lang_in: "ru"
@@ -29,9 +28,9 @@ merge_embeddings:
   alpha: 0.25
 
 merge_vocabs:
-  tokenizer_en: "./data/temp_model/tokenizer.json"
-  tokenizer_ru: "./data/ru_bpe_2000/tokenizer.json"
-  tokenizer_output: "./data/en_ru_tokenizer.json"
+  tokenizer_en: "./data/data_correct/temp_model/tokenizer.json"
+  tokenizer_ru: "./data/data_correct/ru_bpe_2000/tokenizer.json"
+  tokenizer_output: "./data/data_correct/tokenizer.json"
   test_string: "синхрофазотрон"
   cut_vocab_offset: 18
 

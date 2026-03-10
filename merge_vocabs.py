@@ -68,7 +68,8 @@ def main():
     print(f"📊 Vocabulary sizes: {ru_tokenizer.get_vocab_size()} and {en_tokenizer.tokenizer.get_vocab_size()}")
 
     # Test encoding/decoding
-    test_ids = ru_tokenizer.encode(merge_vocabs_conf["test_string"]).ids
+    test_string = merge_vocabs_conf["test_string"]
+    test_ids = ru_tokenizer.encode(test_string).ids
     print(f"Ru tokenizer: Test string '{merge_vocabs_conf['test_string']}' encoded as: {test_ids}")
     print(f"Decoded back: {ru_tokenizer.decode(test_ids)}")
 
@@ -108,7 +109,10 @@ def main():
         idx = tokenizer_new.encode(word)
         print(f"{word} tokenized as : {idx}")
         
-    print(f"test_ids decoded as :{tokenizer_new.decode(test_ids)}")
+    test_string_decoded = tokenizer_new.decode(test_ids)
+    test_new_ids = tokenizer_new.encode(test_string)
+    print(f"test_ids {test_ids} from ru tokenizer decoded be new tokenizer as: {test_string_decoded}")
+    print(f"test string '{test_string}' encoded as :{test_new_ids}")
     
     print("✅ Done!")
 
