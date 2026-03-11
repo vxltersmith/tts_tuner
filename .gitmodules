@@ -3,4 +3,4 @@
 	url = git@github.com:resemble-ai/chatterbox.git
 [submodule "chatterbox-finetuning"]
 	path = chatterbox-finetuning
-	url = ./chatterbox-finetuning/
+	url = git@github.com:stlohrey/chatterbox-finetuning
