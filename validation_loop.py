@@ -22,7 +22,11 @@ def run_pipeline():
     
     print("Loading dataset...")
     ds = get_dataset(config)
-    results = []
+    
+    outputs_cer = []
+    outputs_wer = []
+    outputs_rel_cer = []
+    outputs_rel_wer = []
 
     # Whisper expects 16,000Hz. If your model is different, we resample.
     target_sr = 16000 
@@ -60,7 +64,10 @@ def run_pipeline():
         wer, cer = calculate_metrics(input_text, transcribed_text)
         print(f"WER: {wer:.2%} | CER: {cer:.2%}")
         print(f"Relative WER: {wer_rel:.2%} | CER: {cer_rel:.2%}")
-        results.append(cer)
+        outputs_cer.append(cer)
+        outputs_wer.append(wer)
+        outputs_rel_cer.append(cer_rel)
+        outputs_rel_wer.append(wer_rel)
         
         continue
 
